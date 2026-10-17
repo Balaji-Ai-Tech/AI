@@ -91,7 +91,7 @@ async def upload_document(
         except Exception as exc:
             transformation.status = 'extracted'
             await db.commit()
-            raise HTTPException(503, f'AI indexing failed. Make sure Ollama and the embedding model are running: {exc}')
+            raise HTTPException(503, f'AI indexing failed. Check the configured language and embedding providers: {exc}')
         await db.commit()
         await db.refresh(source)
         return UploadResponse(
@@ -168,7 +168,7 @@ async def upload_documents_batch(
                 try:
                     await index_source(db, source, transformation)
                 except Exception as exc:
-                    raise HTTPException(503, f'Indexing failed for {filename}. Check Ollama and the embedding model: {exc}') from exc
+                    raise HTTPException(503, f'Indexing failed for {filename}. Check the configured language and embedding providers: {exc}') from exc
                 stored_sources.append({
                     'file_id': source.id, 'filename': filename, 'content_type': content_type,
                     'object_key': key, 'size_bytes': file_size, 'text_length': len(extracted),
@@ -266,7 +266,7 @@ async def _ingest_bytes(*, transformation_id: str, user: User, db: AsyncSession,
             await index_source(db, source, transformation)
         except Exception as exc:
             await db.rollback()
-            raise HTTPException(503, 'Source extraction succeeded but indexing failed. Check the embedding provider and its configured dimensions.') from exc
+            raise HTTPException(503, f'Source extraction succeeded but indexing failed. Check the configured language and embedding providers: {exc}') from exc
         analysis = await _summarize_source(extracted[:50000])
         transformation.title = str(analysis.get('title') or filename).strip()[:500]
         transformation.summary = str(analysis.get('summary') or '').strip()[:5000]

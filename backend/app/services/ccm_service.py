@@ -48,7 +48,14 @@ def _fallback_ccm(text: str) -> dict:
 async def build_ccm(text: str) -> dict:
     if not text.strip():
         return _fallback_ccm(text)
-    provider = settings.LLM_PROVIDER.lower()
+    provider = str(settings.LLM_PROVIDER or 'demo').strip().lower()
+    # Accept common names used by Render and OpenAI-compatible deployments.
+    provider = {
+        'google': 'gemini',
+        'google-gemini': 'gemini',
+        'openai': 'litellm',
+        'openai-compatible': 'litellm',
+    }.get(provider, provider)
     if provider == 'demo':
         result = _fallback_ccm(text)
         result['provenance'] = {'extractor': 'offline-demo', 'model': 'rule-based-ccm'}
@@ -93,7 +100,15 @@ Do not invent facts. Keep claims concise and factual. Source document follows:
         )
         parsed = json.loads(response.choices[0].message.content or '{}')
     else:
-        raise ValueError('Unsupported LLM_PROVIDER')
+        # CCM is an enrichment step; indexing source chunks should remain usable
+        # even when the configured LLM name is misspelled or not available here.
+        result = _fallback_ccm(text)
+        result['provenance'] = {
+            'extractor': 'offline-demo-provider-fallback',
+            'model': 'rule-based-ccm',
+            'configured_provider': provider[:80],
+        }
+        return result
     if not isinstance(parsed, dict):
         raise ValueError('The configured language model returned an invalid canonical-content response.')
     if not isinstance(parsed.get('provenance'), dict):

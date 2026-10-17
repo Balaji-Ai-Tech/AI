@@ -48,7 +48,7 @@ def test_gemini_builds_canonical_content(monkeypatch):
             captured.update(url=url, headers=headers, request=json)
             return FakeResponse()
 
-    monkeypatch.setattr(settings, 'LLM_PROVIDER', 'gemini')
+    monkeypatch.setattr(settings, 'LLM_PROVIDER', ' Gemini ')
     monkeypatch.setattr(settings, 'GEMINI_API_KEY', 'test-key')
     monkeypatch.setattr(settings, 'GEMINI_MODEL', 'test-model')
     monkeypatch.setattr('app.services.ccm_service.httpx.AsyncClient', FakeClient)
@@ -69,4 +69,17 @@ def test_gemini_ccm_requires_api_key(monkeypatch):
 
     with pytest.raises(RuntimeError, match='GEMINI_API_KEY is missing'):
         asyncio.run(build_ccm('A readable source document.'))
+
+
+def test_unknown_provider_keeps_source_indexing_available(monkeypatch):
+    monkeypatch.setattr(settings, 'LLM_PROVIDER', 'unexpected-provider')
+
+    result = asyncio.run(build_ccm('The source contains a factual statement.'))
+
+    assert result['claims'][0]['text'] == 'The source contains a factual statement.'
+    assert result['provenance'] == {
+        'extractor': 'offline-demo-provider-fallback',
+        'model': 'rule-based-ccm',
+        'configured_provider': 'unexpected-provider',
+    }
 
