@@ -310,6 +310,17 @@ def _assert_public_http_url(url: str) -> None:
         raise HTTPException(400, 'Private, local, and reserved network addresses are not allowed.')
 
 
+def _check_source_response(response: httpx.Response, source_name: str) -> None:
+    if response.status_code == 403:
+        raise HTTPException(
+            422,
+            f'{source_name} denied automated access (HTTP 403). The site may require a login or block server requests. '
+            'Save the page as a PDF and use Upload files, or copy its text into Paste text.',
+        )
+    if response.status_code >= 400:
+        raise HTTPException(422, f'{source_name} returned HTTP {response.status_code}.')
+
+
 @router.post('/url', response_model=UploadResponse, status_code=201)
 async def upload_public_url(req: UrlUploadRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     current_url = req.url.strip()
@@ -317,7 +328,11 @@ async def upload_public_url(req: UrlUploadRequest, user: User = Depends(get_curr
         current_url = 'https://' + current_url
     # Re-check each redirect target to avoid a URL-fetch SSRF bypass.
     response = None
-    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={'User-Agent': 'TransformHubAI/1.0'}) as client:
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 TransformHubAI/1.0',
+        'Accept': 'text/html,application/xhtml+xml,application/pdf,text/plain;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.8',
+    }) as client:
         for _ in range(4):
             _assert_public_http_url(current_url)
             response = await client.get(current_url)
@@ -330,8 +345,7 @@ async def upload_public_url(req: UrlUploadRequest, user: User = Depends(get_curr
             break
     if response is None or response.status_code in {301, 302, 303, 307, 308}:
         raise HTTPException(422, 'The source URL redirected too many times.')
-    if response.status_code >= 400:
-        raise HTTPException(422, f'The source URL returned HTTP {response.status_code}.')
+    _check_source_response(response, 'The source URL')
     data = response.content
     if len(data) > 8 * 1024 * 1024:
         raise HTTPException(413, 'URL content exceeds the 8 MB web-source limit.')
@@ -368,7 +382,11 @@ async def upload_rss_feed(req: UrlUploadRequest, user: User = Depends(get_curren
     if not current_url.startswith(('http://', 'https://')):
         current_url = 'https://' + current_url
     response = None
-    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={'User-Agent': 'TransformHubAI/1.0 RSS reader'}) as client:
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 TransformHubAI/1.0',
+        'Accept': 'application/rss+xml,application/atom+xml,application/xml,text/xml,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.8',
+    }) as client:
         for _ in range(4):
             _assert_public_http_url(current_url)
             response = await client.get(current_url)
@@ -381,8 +399,7 @@ async def upload_rss_feed(req: UrlUploadRequest, user: User = Depends(get_curren
             break
     if response is None or response.status_code in {301, 302, 303, 307, 308}:
         raise HTTPException(422, 'RSS feed redirected too many times.')
-    if response.status_code >= 400:
-        raise HTTPException(422, f'RSS feed returned HTTP {response.status_code}.')
+    _check_source_response(response, 'The RSS feed')
     if len(response.content) > 8 * 1024 * 1024:
         raise HTTPException(413, 'RSS feed exceeds the 8 MB limit.')
     try:
