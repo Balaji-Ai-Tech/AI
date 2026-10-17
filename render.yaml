@@ -1,0 +1,66 @@
+services:
+  - type: web
+    name: transformhub-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: transformhub-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: transformhub-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: BACKEND_PUBLIC_URL
+        fromService:
+          type: web
+          name: transformhub-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GENERATION_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: EMBEDDING_PROVIDER
+        value: demo
+
+  - type: web
+    name: transformhub-web
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: transformhub-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+
+databases:
+  - name: transformhub-db
+    databaseName: transformhub
+    user: transformhub
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"

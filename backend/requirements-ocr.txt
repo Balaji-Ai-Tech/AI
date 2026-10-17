@@ -1,0 +1,5 @@
+# Optional OCR fallback for images Tesseract cannot read.
+# Install after the base requirements with:
+# python -m pip install -r requirements-ocr.txt
+paddlepaddle==3.2.2
+paddleocr==3.7.0

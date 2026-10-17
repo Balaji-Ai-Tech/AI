@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title desc">
+  <title id="title">TransformHub AI</title><desc id="desc">Cyan and violet hexagonal brain circuit mark.</desc>
+  <defs>
+    <linearGradient id="edge" x1="8" y1="10" x2="92" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#67E8F9"/><stop offset=".48" stop-color="#6366F1"/><stop offset="1" stop-color="#C084FC"/></linearGradient>
+    <linearGradient id="fill" x1="20" y1="15" x2="82" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#10345D"/><stop offset=".52" stop-color="#211552"/><stop offset="1" stop-color="#102343"/></linearGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <path d="M50 4 89 26.5v47L50 96 11 73.5v-47Z" fill="url(#fill)" stroke="url(#edge)" stroke-width="3.3" filter="url(#glow)"/>
+  <path d="M50 12 82 30.5v39L50 88 18 69.5v-39Z" fill="none" stroke="#67E8F9" stroke-opacity=".3" stroke-width="1.2"/>
+  <g fill="none" stroke="url(#edge)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 31c-3-7-13-7-17-1-3 4-2 9 1 12-5 3-6 10-2 14 2 3 5 4 9 3-1 6 4 10 9 10V28"/>
+    <path d="M52 31c3-7 13-7 17-1 3 4 2 9-1 12 5 3 6 10 2 14-2 3-5 4-9 3 1 6-4 10-9 10V28"/>
+    <path d="M39 38h6m-9 14h9m-4-7h7m10-7h-6m9 14h-9m4-7h-7" stroke-width="2.2"/>
+    <path d="M50 26v45m-7-23h7m7 0h-7" stroke="#A5F3FC" stroke-width="2.1"/>
+    <path d="M27 45h-5m7 15h-7m51-15h5m-7 15h7M42 23l-3-5m19 5 3-5" stroke-width="1.8"/>
+  </g>
+  <g fill="#67E8F9"><circle cx="22" cy="45" r="2"/><circle cx="22" cy="60" r="2"/><circle cx="78" cy="45" r="2"/><circle cx="78" cy="60" r="2"/></g>
+</svg>
