@@ -68,6 +68,23 @@ Do not invent facts. Keep claims concise and factual. Source document follows:
             )
             response.raise_for_status()
         parsed = json.loads(response.json().get('response', '{}'))
+    elif provider == 'gemini':
+        if not settings.GEMINI_API_KEY:
+            raise RuntimeError('Gemini is selected but GEMINI_API_KEY is missing from the backend environment.')
+        async with httpx.AsyncClient(timeout=180) as client:
+            response = await client.post(
+                f'https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent',
+                headers={'x-goog-api-key': settings.GEMINI_API_KEY},
+                json={
+                    'contents': [{'parts': [{'text': prompt}]}],
+                    'generationConfig': {'responseMimeType': 'application/json', 'temperature': 0.1},
+                },
+            )
+            response.raise_for_status()
+        candidates = response.json().get('candidates') or []
+        parts = ((candidates[0].get('content') or {}).get('parts') or []) if candidates else []
+        raw = ''.join(str(part.get('text') or '') for part in parts).strip()
+        parsed = json.loads(raw or '{}')
     elif provider in {'litellm', 'vllm'}:
         from litellm import acompletion
         response = await acompletion(
@@ -81,5 +98,6 @@ Do not invent facts. Keep claims concise and factual. Source document follows:
         raise ValueError('The configured language model returned an invalid canonical-content response.')
     if not isinstance(parsed.get('provenance'), dict):
         parsed['provenance'] = {}
-    parsed['provenance'].update({'extractor': provider, 'model': settings.LLM_MODEL})
+    model = settings.GEMINI_MODEL if provider == 'gemini' else settings.LLM_MODEL
+    parsed['provenance'].update({'extractor': provider, 'model': model})
     return parsed
